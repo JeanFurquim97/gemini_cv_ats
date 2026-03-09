@@ -6,6 +6,7 @@ const defaultProfile = {
   email: "",
   phone: "",
   location: "",
+  objective: "",
   summary: "",
   interests: [""],
   education: [{ course: "", institution: "", period: "" }],
@@ -346,6 +347,10 @@ function App() {
               <div className="field-group">
                 <label>Localizacao</label>
                 <input value={profile.location} onChange={(e) => setProfile({ ...profile, location: e.target.value })} />
+              </div>
+              <div className="field-group">
+                <label>Objetivo profissional</label>
+                <textarea value={profile.objective} onChange={(e) => setProfile({ ...profile, objective: e.target.value })} />
               </div>
               <div className="field-group">
                 <label>Resumo profissional</label>

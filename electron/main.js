@@ -14,6 +14,7 @@ const store = new Store({
   name: "gemini-ats-store",
   defaults: {
     profile: {
+      objective: "",
       summary: "",
       interests: [],
       education: [],
@@ -95,6 +96,9 @@ function resumeHtmlTemplate(resume) {
   <h2>Resumo</h2>
   <p>${toSafeText(resume.summary || "")}</p>
 
+  <h2>Objetivo</h2>
+  <p>${toSafeText(resume.objetivo || "")}</p>
+
   <h2>Experiência</h2>
   ${experience
     .map((item) => {
@@ -126,7 +130,7 @@ function resumeHtmlTemplate(resume) {
 async function askGeminiForJson({ apiKey, prompt }) {
   const ai = new GoogleGenAI({ apiKey });
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     contents: prompt
   });
 
@@ -190,6 +194,7 @@ Formato JSON obrigatório:
   "name": "string",
   "title": "string",
   "contact": ["string"],
+  "objetivo": "string",
   "summary": "string",
   "skills": ["string"],
   "experience": [
