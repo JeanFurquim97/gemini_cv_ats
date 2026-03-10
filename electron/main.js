@@ -51,6 +51,45 @@ function extractJson(text) {
   throw new Error("Não foi possível extrair JSON válido da resposta.");
 }
 
+function formatPrimitive(value) {
+  if (value === null || value === undefined) return "null";
+  if (typeof value === "boolean" || typeof value === "number") return String(value);
+  return String(value);
+}
+
+function jsonToToon(value, indent = 0) {
+  const pad = "  ".repeat(indent);
+
+  if (Array.isArray(value)) {
+    const flat = value.every((item) => item === null || ["string", "number", "boolean"].includes(typeof item));
+    if (flat) {
+      return `[${value.map(formatPrimitive).join(", ")}]`;
+    }
+    const inner = value
+      .map((item) => `${"  ".repeat(indent + 1)}${jsonToToon(item, indent + 1)}`)
+      .join("\n");
+    return `[\n${inner}\n${pad}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .map(([key, val]) => {
+        const isFlat =
+          val === null ||
+          ["string", "number", "boolean"].includes(typeof val) ||
+          (Array.isArray(val) && val.every((item) => item === null || ["string", "number", "boolean"].includes(typeof item)));
+        const rendered = jsonToToon(val, indent + 1);
+        if (isFlat) {
+          return `${pad}${key}: ${rendered}`;
+        }
+        return `${pad}${key}:\n${rendered}`;
+      })
+      .join("\n");
+  }
+
+  return formatPrimitive(value);
+}
+
 function normalizeArray(arr) {
   if (!Array.isArray(arr)) {
     return [];
@@ -130,7 +169,7 @@ function resumeHtmlTemplate(resume) {
 async function askGeminiForJson({ apiKey, prompt }) {
   const ai = new GoogleGenAI({ apiKey });
   const result = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite-preview",
     contents: prompt
   });
 
@@ -215,10 +254,10 @@ Formato JSON obrigatório:
 }
 
 PERFIL:
-${JSON.stringify(profile, null, 2)}
+${jsonToToon(profile)}
 
 VAGA:
-${JSON.stringify(jobAnalysis, null, 2)}
+${jsonToToon(jobAnalysis)}
 `;
 
   const parsed = await askGeminiForJson({ apiKey, prompt });

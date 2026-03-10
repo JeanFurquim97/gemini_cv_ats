@@ -23,6 +23,43 @@ function ensureArray(values, fallback = [""]) {
   return Array.isArray(values) && values.length > 0 ? values : fallback;
 }
 
+function formatPrimitive(value) {
+  if (value === null || value === undefined) return "null";
+  if (typeof value === "boolean" || typeof value === "number") return String(value);
+  return String(value);
+}
+
+function jsonToToon(value, indent = 0) {
+  const pad = "  ".repeat(indent);
+
+  if (Array.isArray(value)) {
+    const flat = value.every((item) => item === null || ["string", "number", "boolean"].includes(typeof item));
+    if (flat) {
+      return `[${value.map(formatPrimitive).join(", ")}]`;
+    }
+    const inner = value.map((item) => `${"  ".repeat(indent + 1)}${jsonToToon(item, indent + 1)}`).join("\n");
+    return `[\n${inner}\n${pad}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .map(([key, val]) => {
+        const isFlat =
+          val === null ||
+          ["string", "number", "boolean"].includes(typeof val) ||
+          (Array.isArray(val) && val.every((item) => item === null || ["string", "number", "boolean"].includes(typeof item)));
+        const rendered = jsonToToon(val, indent + 1);
+        if (isFlat) {
+          return `${pad}${key}: ${rendered}`;
+        }
+        return `${pad}${key}:\n${rendered}`;
+      })
+      .join("\n");
+  }
+
+  return formatPrimitive(value);
+}
+
 function sanitizeProfile(profile) {
   if (!profile || typeof profile !== "object") {
     return defaultProfile;
@@ -163,6 +200,9 @@ function App() {
     ],
     [jobAnalysis, generatedResume]
   );
+
+  const jobAnalysisToon = useMemo(() => (jobAnalysis ? jsonToToon(jobAnalysis) : ""), [jobAnalysis]);
+  const resumeToon = useMemo(() => (generatedResume ? jsonToToon(generatedResume) : ""), [generatedResume]);
 
   const setActionLoading = (key, value) =>
     setLoading((prev) => ({
@@ -721,15 +761,6 @@ function App() {
                 <p className="hint">Nenhum curriculo gerado ainda.</p>
               )}
 
-              <details className="advanced">
-                <summary>Avancado</summary>
-                <div className="section">
-                  <h3>JSON da vaga</h3>
-                  <pre>{JSON.stringify(jobAnalysis, null, 2)}</pre>
-                  <h3>JSON do curriculo</h3>
-                  <pre>{JSON.stringify(generatedResume, null, 2)}</pre>
-                </div>
-              </details>
             </div>
           )}
         </section>
